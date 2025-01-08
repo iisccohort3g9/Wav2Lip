@@ -7,6 +7,7 @@ from glob import glob
 import torch, face_detection
 from models import Wav2Lip
 import platform
+import tempfile
 
 parser = argparse.ArgumentParser(description='Inference code to lip-sync videos in the wild using Wav2Lip models')
 
@@ -18,7 +19,7 @@ parser.add_argument('--face', type=str,
 parser.add_argument('--audio', type=str, 
 					help='Filepath of video/audio file to use as raw audio source', required=True)
 parser.add_argument('--outfile', type=str, help='Video path to save result. See default for an e.g.', 
-								default='results/result_voice.mp4')
+								default=tempfile.NamedTemporaryFile(delete=False, suffix=".mp4"))
 
 parser.add_argument('--static', type=bool, 
 					help='If True, then use only first video frame for inference', default=False)
@@ -253,7 +254,7 @@ def main():
 			print ("Model loaded")
 
 			frame_h, frame_w = full_frames[0].shape[:-1]
-			out = cv2.VideoWriter('temp/result.avi', 
+			out = cv2.VideoWriter('Wav2Lip/temp/result.avi',
 									cv2.VideoWriter_fourcc(*'DIVX'), fps, (frame_w, frame_h))
 
 		img_batch = torch.FloatTensor(np.transpose(img_batch, (0, 3, 1, 2))).to(device)
@@ -273,8 +274,9 @@ def main():
 
 	out.release()
 
-	command = 'ffmpeg -y -i {} -i {} -strict -2 -q:v 1 {}'.format(args.audio, 'temp/result.avi', args.outfile)
+	command = 'ffmpeg -y -i {} -i {} -strict -2 -q:v 1 {}'.format(args.audio, 'Wav2Lip/temp/result.avi', args.outfile)
 	subprocess.call(command, shell=platform.system() != 'Windows')
+	print("Output video file saved to:", args.outfile)
 
 if __name__ == '__main__':
 	main()
